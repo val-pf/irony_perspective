@@ -123,7 +123,12 @@ response_all <- na.omit(response_all)
 
 write.csv(response_all, "all_response_tidy.csv")
 
-##################################
+######################################################
+####### Work with tidy dataset ########
+
+response_all <- read.table("all_response_tidy.csv", header=TRUE, sep=",") 
+summary(response4R)
+
 valence <- subset(response_all, rating =="Valence")
 valence
 class(valence$response)
@@ -134,6 +139,8 @@ valence$addressee <- as.factor(valence$addressee)
 valence$role <- as.factor(valence$role)
 valence$Subject <- as.factor(valence$Subject)
 valence$item <- as.factor(valence$item)
+
+## model with just one random effect
 fm1 <- clmm2(resp_fac ~ addressee + role + literality, random=Subject, 
              data=valence, Hess=TRUE)
 fm2 <- clmm2(resp_fac ~ addressee + role + literality, random=item, 
@@ -145,10 +152,11 @@ summary(fm2)
 exp(coef(fm1))
 plot(fm1)
 
+## model with two random effects
 m1 <- clmm(resp_fac ~ addressee + role + literality + 
              (1|Subject) + (1|item), data=valence)
 summary(m1)
 # RVAideMemoire::Anova.clmm(m1, type="2") results similar to the model
 require(emmeans)
-marginal = emmeans(m1,~ addressee + role + literality)
-pairs(marginal, adjust= "tukey")
+posthoc = emmeans(m1,~ addressee + role + literality)
+pairs(posthoc, adjust= "tukey")
