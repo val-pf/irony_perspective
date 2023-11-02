@@ -1,0 +1,62 @@
+### fit maximal linear model 
+### first, we load the packagev afex, this package lets you fit a model using the double-bar syntax to automatically 
+#### remove the random correlations between intercepts and slopes using the function lmer_alt
+#### (everything else about this function is identical to using lmer())
+library(afex)
+
+
+### first, re-code factors using sum contrast coding, which is akin to using anova
+contrasts(arousal$addressee) <- contr.sum(2)/2
+contrasts(arousal$role) <- contr.sum(2)/2
+contrasts(arousal$literality) <- contr.sum(2)/2
+
+contrasts(valence$addressee) <- contr.sum(2)/2
+contrasts(valence$role) <- contr.sum(2)/2
+contrasts(valence$literality) <- contr.sum(2)/2
+
+
+#### now we fit the maximal model to both arousal and valence
+
+m1_new_arousal <- lmer_alt(response ~ addressee*role*literality + 
+            (1+ addressee*role*literality||Subject) + (1+ addressee*role*literality||item), data=arousal,
+           REML=F, control = lmerControl(optimizer = "bobyqa",optCtrl=list(maxfun=1e6)))
+
+
+m1_new_valence <- lmer_alt(response ~ addressee*role*literality + 
+                            (1+ addressee*role*literality||Subject) + (1+ addressee*role*literality||item), data=valence,
+                          REML=F, control = lmerControl(optimizer = "bobyqa",optCtrl=list(maxfun=1e6)))
+summary(m1_new_valence)
+
+### the results are very different to those reported by the authors: 
+summary(m1_new_arousal)
+
+#Fixed effects:
+#  Estimate Std. Error        df t value Pr(>|t|)    
+#(Intercept)                  3.749e+00  7.698e-02 2.785e+02  48.697  < 2e-16 ***
+#  addressee1                   7.185e-02  1.946e-02 1.132e+02   3.691 0.000345 ***
+#  role1                        7.453e-02  2.304e-02 1.436e+02   3.234 0.001513 ** 
+#  literality1                  8.659e-03  2.347e-02 1.500e+02   0.369 0.712707    
+#addressee1:role1             3.494e-01  1.033e-01 1.737e+02   3.383 0.000885 ***
+#  addressee1:literality1       4.625e-02  3.401e-02 1.528e+02   1.360 0.175947    
+#role1:literality1            2.613e-02  3.633e-02 9.940e+01   0.719 0.473731    
+#addressee1:role1:literality1 1.270e-02  7.458e-02 1.051e+02   0.170 0.865091    
+
+summary(m1_new_valence)
+
+#Fixed effects:
+#  Estimate Std. Error        df t value Pr(>|t|)    
+#(Intercept)                    3.03689    0.05066 311.06134  59.946  < 2e-16 ***
+#  addressee1                    -0.09969    0.02230 167.63988  -4.470 1.44e-05 ***
+#  role1                          0.13900    0.02206 160.31079   6.302 2.72e-09 ***
+#  literality1                   -0.02173    0.02692 160.11936  -0.807   0.4208    
+#addressee1:role1               0.24066    0.12999 163.22773   1.851   0.0659 .  
+#addressee1:literality1         0.01193    0.03150 103.00032   0.379   0.7057    
+#role1:literality1             -0.01829    0.03279 111.40472  -0.558   0.5782    
+#addressee1:role1:literality1  -0.01886    0.06877 119.48266  -0.274   0.7844  
+
+
+require(emmeans)
+marginal = emmeans(m1_new_arousal,~ addressee * role * literality)
+marginal2 = emmeans(m1_new_valence,~ addressee * role * literality)
+
+pairs(marginal, adjust= "tukey")
